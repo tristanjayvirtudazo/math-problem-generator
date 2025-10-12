@@ -130,8 +130,8 @@ When submitting your assessment, provide:
 2. **Live Demo URL**: Your Vercel deployment
 3. **Supabase Credentials**: Add these to your README for testing:
    ```
-   SUPABASE_URL: [Your Supabase Project URL]
-   SUPABASE_ANON_KEY: [Your Supabase Anon Key]
+   SUPABASE_URL: https://fbypyhyelcetcntqxutt.supabase.co
+   SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZieXB5aHllbGNldGNudHF4dXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxNDQ2MjIsImV4cCI6MjA3NTcyMDYyMn0.-ShbiN2MXsFnnSNZDAHhsdUxcIopOWMJdUNZMd7psc4
    ```
 
 ## Implementation Notes
@@ -139,10 +139,18 @@ When submitting your assessment, provide:
 *Please fill in this section with any important notes about your implementation, design decisions, challenges faced, or features you're particularly proud of.*
 
 ### My Implementation:
+API 
+- Aside from using the supabase client, I created functions for database query in order to mitigate bloating.
+- Created validations and added logging as well as error handlers.
+- Add integration for AI with prompt caching for the mathematics syllabus.
 
-- 
-- 
-- 
+UI 
+- At first, styling is not present upon cloning the project but it was fixed after reconfiguration of tailwindcss.
+- Add error indicators if a server error occur.
+- Added states for loading while checking and errors. 
+
+Challenges
+- Tailwindcss configuration, since we are currently using nexjs 14 and tailwindcss 3, at first all was working well but then I realized that tailwind got a problem when it comes to applying the classes.
 
 ## Additional Features (Optional)
 
