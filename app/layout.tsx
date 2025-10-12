@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Lexend } from 'next/font/google'
 import '@/styles/globals.css'
 
-const lexend = Inter({ subsets: ['latin'] })
+const lexend = Lexend({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Math Problem Generator',
