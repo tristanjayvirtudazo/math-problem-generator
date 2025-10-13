@@ -1,10 +1,15 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { saveProblemAndGetSessionId } from "@/lib/supabaseClient"
 import { readFileSync } from "fs"
 import { MathProblem, ProblemResponse } from "@/shared/types"
 import { AIGenerationError, ValidationError } from "@/shared/errors"
 import { AI_MAX_RETRIES, AI_MODEL_NAME, AI_TIMEOUT_MS, RULESET_FILE_PATH } from "@/shared/constants"
+
+interface ProblemConfig {
+  difficulty?: string,
+  problemType?: string
+}
 
 // Cache ruleset content at module level (loaded once)
 let cachedRulesetContent: string | null = null
@@ -17,19 +22,17 @@ if (!apiKey) {
 const genAI = new GoogleGenerativeAI(apiKey)
 const model = genAI.getGenerativeModel({ model: AI_MODEL_NAME })
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const problemConfig = await request.json() as ProblemConfig
+
   try {
     // Generate Problem
-    const aiProblem = await generateProblem()
+    const aiProblem = await generateProblem(problemConfig)
 
     // Validate AI response structure
     validateResponseStructure(aiProblem)
 
-    // Sanitize content for XSS protection
-    const sanitizedProblem = sanitizeProblemContent(aiProblem)
-
-    // Save to Supabase
-    const { data, error } = await saveProblemAndGetSessionId(sanitizedProblem)
+    const { data, error } = await saveProblemAndGetSessionId(aiProblem)
 
     if (error) {
       console.error("[ERROR] Database error:", error)
@@ -39,9 +42,8 @@ export async function POST() {
       )
     }
 
-    // Return response
     const problemResponse: ProblemResponse = {
-      problem: sanitizedProblem,
+      problem: aiProblem,
       sessionId: data.id,
     }
 
@@ -88,14 +90,16 @@ const loadRulesetContent = (): string => {
 /**
  * Generates a math problem using Google's Gemini AI with retry logic and timeout
  */
-const generateProblem = async (): Promise<MathProblem> => {
+const generateProblem = async (config: ProblemConfig): Promise<MathProblem> => {
   // Load cached ruleset
   const rulesetContent = loadRulesetContent()
 
-  // Create prompt for Primary 5 level math problem
   const prompt = `${rulesetContent}
 
 Based on the rules above, generate ONE math word problem for Primary 5 students.
+
+Difficulty Level: ${config.difficulty ?? "Random from easy to hard"}
+Problem types: ${config.problemType ?? "In random, whether addition, subtraction, multiplication, or division "}
 
 Do not include any markdown formatting, code blocks, or additional text.
 Only return the raw JSON object.`
@@ -116,7 +120,6 @@ Only return the raw JSON object.`
       const aiResult = result as Awaited<ReturnType<typeof model.generateContent>>
       const jsonString = sanitizeMarkdown(aiResult.response.text())
 
-      // Parse and validate JSON structure
       let parsedValue: unknown
       try {
         parsedValue = JSON.parse(jsonString)
@@ -124,7 +127,6 @@ Only return the raw JSON object.`
         throw new AIGenerationError("AI returned invalid JSON", parseError)
       }
 
-      // Runtime type validation
       if (!isValidMathProblem(parsedValue)) {
         throw new AIGenerationError("AI response doesn't match MathProblem schema")
       }
@@ -192,32 +194,6 @@ const validateResponseStructure = (problem: MathProblem): void => {
   if (!isFinite(problem.final_answer)) {
     throw new ValidationError("final_answer must be a finite number")
   }
-}
-
-/**
- * Sanitizes problem content to prevent XSS attacks
- */
-const sanitizeProblemContent = (problem: MathProblem): MathProblem => {
-  return {
-    problem_text: sanitizeHtml(problem.problem_text),
-    final_answer: problem.final_answer,
-  }
-}
-
-/**
- * Basic XSS sanitization - escapes HTML special characters
- */
-const sanitizeHtml = (text: string): string => {
-  const htmlEscapeMap: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#x27;",
-    "/": "&#x2F;",
-  }
-
-  return text.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char] || char)
 }
 
 /**
