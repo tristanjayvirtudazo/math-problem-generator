@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { FeedbackResponse, ProblemResponse } from '@/shared/types'
+import DifficultyOptions from '@/components/DifficultyOptions'
+import ProblemTypeOptions from '@/components/ProblemTypeOptions'
 interface MathProblem {
   problem_text: string
   final_answer: number
@@ -16,16 +18,23 @@ export default function Home() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [isChecking, setChecking] = useState(false)
   const [error, setError] = useState('')
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy')
+  const [problemType, setProblemType] = useState<'addition' | 'subtraction' | 'multiplication' | 'division'>('addition')
 
   const generateProblem = async () => {
     setIsLoading(true)
     setFeedback('')
 
     try {
-
+      const requestBody = {
+        difficulty,
+        problemType
+      }
       const response = await fetch('/api/math-problem', {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify(requestBody)
       })
+
       const data = await response.json() as ProblemResponse
 
       setProblem(data.problem)
@@ -79,6 +88,9 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">
           Math Problem Generator
         </h1>
+
+        <ProblemTypeOptions selectedTopic={problemType} onSelectTopic={setProblemType} />
+        <DifficultyOptions selectedDifficulty={difficulty} onSelectDifficulty={setDifficulty} />
         
         {!isChecking && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
@@ -104,7 +116,7 @@ export default function Home() {
         {problem && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">Problem:</h2>
-            <p className="text-lg text-gray-800 leading-relaxed mb-6">
+            <p className="text-sm md:text-lg text-gray-800 leading-relaxed mb-6">
               {problem.problem_text}
             </p>
             
