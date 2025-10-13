@@ -147,7 +147,8 @@ API
 UI 
 - At first, styling is not present upon cloning the project but it was fixed after reconfiguration of tailwindcss.
 - Add error indicators if a server error occur.
-- Added states for loading while checking and errors. 
+- Added states for loading while checking and errors.
+- Created components to separate the encapsulation of ui according to their usage.
 
 Challenges
 - Tailwindcss configuration, since we are currently using nexjs 14 and tailwindcss 3, at first all was working well but then I realized that tailwind got a problem when it comes to applying the classes.
